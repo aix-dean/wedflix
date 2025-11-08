@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../providers/auth_provider.dart' as my_auth;
 import '../widgets/venue_card.dart';
 import '../widgets/category_filter.dart';
 import 'search_screen.dart';
+import 'login_screen.dart';
 import '../models/venue.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,13 +23,36 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('WedFlix'),
+        title: Consumer<my_auth.AuthProvider>(
+          builder: (context, authProvider, _) {
+            if (authProvider.currentUser != null) {
+              return Text('Welcome, ${authProvider.currentUser!.email}');
+            } else {
+              return const Text('WedFlix');
+            }
+          },
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
+          Consumer<my_auth.AuthProvider>(
+            builder: (context, authProvider, _) {
+              if (authProvider.currentUser != null) {
+                return IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () async {
+                    await authProvider.signOut();
+                  },
+                );
+              } else {
+                return IconButton(
+                  icon: const Icon(Icons.login),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  },
+                );
+              }
             },
           ),
         ],

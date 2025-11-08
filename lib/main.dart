@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'providers/app_provider.dart';
+import 'providers/auth_provider.dart' as my_auth;
 import 'screens/home_screen.dart';
 import 'screens/wishlist_screen.dart';
 import 'screens/trips_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/profile_screen.dart';
+import 'widgets/bottom_nav_component.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const WedFlixApp());
 }
 
@@ -18,6 +26,7 @@ class WedFlixApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => my_auth.AuthProvider()),
         ChangeNotifierProvider(create: (_) => AppProvider()),
       ],
       child: MaterialApp(
@@ -30,7 +39,6 @@ class WedFlixApp extends StatelessWidget {
             foregroundColor: Colors.black,
             elevation: 0,
           ),
-
         ),
         home: const MainScreen(),
       ),
@@ -66,49 +74,9 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Color(0xFFD8DCE0), width: 1),
-          ),
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _selectedIndex,
-          selectedItemColor: const Color(0xFFD42F4D),
-          unselectedItemColor: const Color(0xFF717375),
-          selectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-          ),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Explore',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border),
-              label: 'Wishlist',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.airplanemode_active),
-              label: 'Trips',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.message_outlined),
-              label: 'Inbox',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: 'Profile',
-            ),
-          ],
-          onTap: _onItemTapped,
-        ),
+      bottomNavigationBar: BottomNavComponent(
+        currentIndex: _selectedIndex,
+        onTabSelected: _onItemTapped,
       ),
     );
   }
