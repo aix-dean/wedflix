@@ -431,7 +431,10 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
                                       onTap: () => Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => SiteDetailsScreen(site: site),
+                                          builder: (context) => SiteDetailsScreen(
+                                            site: site,
+                                            selectedDate: Provider.of<AppProvider>(context, listen: false).selectedWeddingDate!,
+                                          ),
                                         ),
                                       ),
                                     );

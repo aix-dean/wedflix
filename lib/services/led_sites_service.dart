@@ -69,6 +69,7 @@ class LedSitesService {
     return await _firestore
         .collection('products')
         .where('active', isEqualTo: true)
+        .where('content_type', isEqualTo: 'digital')
         .where('geopoint.latitude', isGreaterThanOrEqualTo: bounds.southwest.latitude)
         .where('geopoint.latitude', isLessThanOrEqualTo: bounds.northeast.latitude)
         .limit(limit)
@@ -83,6 +84,7 @@ class LedSitesService {
     return await _firestore
         .collection('products')
         .where('active', isEqualTo: true)
+        .where('content_type', isEqualTo: 'digital')
         .limit(limit)
         .get();
   }
@@ -93,16 +95,22 @@ class LedSitesService {
       final querySnapshot = await _firestore
           .collection('products')
           .where('active', isEqualTo: true)
+          .where('content_type', isEqualTo: 'digital')
           .limit(limit)
           .get();
 
       return querySnapshot.docs
           .map((doc) {
-            try {
-              return Product.fromFirestore(doc);
-            } catch (e) {
-              return null;
+            final data = doc.data() as Map<String, dynamic>;
+            // Additional client-side filter to ensure content_type == 'digital'
+            if (data['content_type'] == 'digital') {
+              try {
+                return Product.fromFirestore(doc);
+              } catch (e) {
+                return null;
+              }
             }
+            return null;
           })
           .where((product) => product != null)
           .cast<Product>()

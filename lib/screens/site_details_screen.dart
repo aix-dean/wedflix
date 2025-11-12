@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/site.dart';
+import '../models/site_booking.dart';
 import 'checkout_pay_screen.dart';
 
 class SiteDetailsScreen extends StatefulWidget {
   final Site site;
+  final DateTime selectedDate;
 
-  const SiteDetailsScreen({super.key, required this.site});
+  const SiteDetailsScreen({super.key, required this.site, required this.selectedDate});
 
   @override
   State<SiteDetailsScreen> createState() => _SiteDetailsScreenState();
@@ -14,10 +19,60 @@ class SiteDetailsScreen extends StatefulWidget {
 class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
   int _currentImageIndex = 0;
   final PageController _pageController = PageController();
+  late GoogleMapController mapController;
+  Set<Marker> markers = {};
+  List<DateTime> _bookedDates = [];
+  bool _isLoadingBookings = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeMarkers();
+    _fetchBookedDates();
+  }
+
+  void _initializeMarkers() {
+    markers.add(
+      Marker(
+        markerId: MarkerId(widget.site.id),
+        position: widget.site.position,
+        infoWindow: InfoWindow(
+          title: widget.site.name,
+          snippet: widget.site.location,
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), // Red marker to match app theme
+        anchor: const Offset(0.5, 1.0), // Center the marker at the bottom
+      ),
+    );
+  }
+
+  Future<void> _fetchBookedDates() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('site_bookings')
+          .where('siteId', isEqualTo: widget.site.id)
+          .get();
+
+      final bookedDates = querySnapshot.docs
+          .map((doc) => SiteBooking.fromJson(doc.data()))
+          .map((booking) => booking.selectedDate)
+          .toList();
+
+      setState(() {
+        _bookedDates = bookedDates;
+        _isLoadingBookings = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingBookings = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    mapController.dispose();
     super.dispose();
   }
 
@@ -349,32 +404,25 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        // Map placeholder
+        // Google Map
         Container(
           height: 218,
           decoration: BoxDecoration(
-            color: Colors.grey[300],
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Center(
-            child: Text('Map View'),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFD8DCE0)),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(6),
-              bottomRight: Radius.circular(6),
-            ),
-          ),
-          child: const Text(
-            'Exact location provided after booking.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF717375),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: widget.site.position,
+                zoom: 15,
+              ),
+              markers: markers,
+              onMapCreated: (controller) {
+                mapController = controller;
+              },
+              zoomControlsEnabled: false,
+              mapToolbarEnabled: false,
             ),
           ),
         ),
@@ -535,13 +583,30 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Jun 25 – 30',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF717375),
+        if (_isLoadingBookings)
+          const Text(
+            'Loading...',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF717375),
+            ),
+          )
+        else if (_bookedDates.isEmpty)
+          const Text(
+            'Available',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF717375),
+            ),
+          )
+        else
+          Text(
+            'Booked: ${_bookedDates.map((date) => DateFormat('MMM d').format(date)).join(', ')}',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF717375),
+            ),
           ),
-        ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -680,9 +745,9 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                       color: Color(0xFF0A0A0A),
                     ),
                   ),
-                  const Text(
-                    'Aug 1, 2026',
-                    style: TextStyle(
+                  Text(
+                    DateFormat('MMM d, y').format(widget.selectedDate),
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF0A0A0A),
                       decoration: TextDecoration.underline,
@@ -698,7 +763,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                   MaterialPageRoute(
                     builder: (context) => CheckoutPayScreen(
                       site: widget.site,
-                      selectedDate: DateTime(2026, 8, 1), // Aug 1, 2026
+                      selectedDate: widget.selectedDate,
                     ),
                   ),
                 );

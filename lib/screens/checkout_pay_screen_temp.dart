@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import '../models/site.dart';
 import '../models/site_booking.dart';
 import '../services/file_upload_service.dart';
@@ -38,7 +37,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
+        title: const Text('Checkoust'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -765,7 +764,6 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         setState(() {
           isUploading = false;
         });
-        return;
       }
 
       final userId = context.read<AuthProvider>().currentUser?.uid ?? 'anonymous';
@@ -777,7 +775,6 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         uploadProgress = 1.0;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video uploaded successfully')),
       );
     } catch (e) {
@@ -786,7 +783,6 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         errorMessage = e.toString();
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Upload failed: $e')),
       );
     }
@@ -799,65 +795,48 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   }
 
   Future<void> _processPayment() async {
-    if (videoUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload a video first')),
-      );
-      return;
-    }
+
+  }
 
     if (selectedPaymentMethod != 'Xendit') {
       // For other methods, just create booking
-      try {
-        await _createBooking('pending');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking created successfully!')),
-        );
-        Navigator.of(context).pop(); // Go back to previous screen
-      } catch (e) {
-        print('Booking error: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking failed: $e')),
-        );
-      }
-    } else {
-      try {
-        setState(() {
-          isProcessingPayment = true;
-          errorMessage = null;
-        });
+      await _createBooking('pending');
+    }
 
-        final userEmail = context.read<AuthProvider>().currentUser?.email;
-        final invoice = await _paymentService.createInvoice(
-          amount: widget.site.price.toInt() < 100 ? 100 : widget.site.price.toInt(),
-          description: '${widget.site.name} - ${widget.selectedDate.toString().split(' ')[0]}',
-          payerEmail: (userEmail != null && userEmail.contains('@')) ? userEmail : 'test@example.com',
-        );
+    try {
+      setState(() {
+        isProcessingPayment = true;
+        errorMessage = null;
+      });
 
-        final paymentUrl = invoice['invoice_url'];
-        await _paymentService.openPaymentUrl(paymentUrl);
+      final userEmail = context.read<AuthProvider>().currentUser?.email;
+      final invoice = await _paymentService.createInvoice(
+        amount: widget.site.price.toInt() < 100 ? 100 : widget.site.price.toInt(),
+        description: '${widget.site.name} - ${widget.selectedDate.toString().split(' ')[0]}',
+        payerEmail: (userEmail != null && userEmail.contains('@')) ? userEmail : 'test@example.com',
+      );
 
-        // For development, assume payment successful after opening URL
-        await _createBooking('paid', paymentUrl: paymentUrl);
+      final paymentUrl = invoice['invoice_url'];
+      await _paymentService.openPaymentUrl(paymentUrl);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment successful!')),
-        );
+      // For development, assume payment successful after opening URL
+      await _createBooking('paid', paymentUrl: paymentUrl);
 
-        Navigator.of(context).pop(); // Go back to previous screen
-      } catch (e) {
-        setState(() {
-          errorMessage = e.toString();
-        });
+        const SnackBar(content: Text('Payment successful!')),
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment failed: $e')),
-        );
-      } finally {
-        setState(() {
-          isProcessingPayment = false;
-        });
-      }
+      Navigator.of(context).pop(); // Go back to previous screen
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+      });
+
+        SnackBar(content: Text('Payment failed: $e')),
+      );
+    } finally {
+      setState(() {
+        isProcessingPayment = false;
+      });
     }
   }
 
@@ -873,26 +852,23 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
       final sellerId = rawProduct?['seller_id'] ?? 'C5Rz6ROQTAegDNMtMXGHzD8CCHU2'; // Default from example
       
       final bookingData = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'company_id': companyId,
-        'created': Timestamp.fromDate(now),
-        'end_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
+        'created': now.toUtc().toIso8601String(),
+        'end_date': widget.selectedDate.toUtc().toIso8601String(),
         'for_censorship': 0,
         'for_screening': 1,
         'product_id': productId,
         'seller_id': sellerId,
-        'start_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
-        'updated': Timestamp.fromDate(now),
+        'start_date': widget.selectedDate.toUtc().toIso8601String(),
+        'updated': now.toUtc().toIso8601String(),
         'url': videoUrl,
       };
 
-      final docRef = await FirebaseFirestore.instance.collection('booking').add(bookingData);
-
-      // Update the document with its auto-generated ID
-      await docRef.update({'id': docRef.id});
-
-      print('Attempting to create booking with ID: ${docRef.id}');
-
-      print('Booking created successfully');
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingData['id'] as String)
+          .set(bookingData);
 
       // Update app provider - but AppProvider uses Booking model, not SiteBooking
       // For now, skip or adapt

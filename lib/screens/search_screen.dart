@@ -156,7 +156,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'When is the big day?',
+                                      'When',
                                       style: TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.w500,
