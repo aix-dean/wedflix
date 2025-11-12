@@ -3,30 +3,33 @@ import '../models/venue.dart';
 import '../models/booking.dart';
 import '../models/user.dart';
 import '../data/mock_data.dart';
+import '../services/places_service.dart';
 
 class AppProvider with ChangeNotifier {
   List<Venue> _venues = mockVenues;
   List<Booking> _bookings = mockBookings;
   User? _currentUser = mockUser;
   int _currentIndex = 0;
+  bool _hasInboxNotifications = true; // Set to true for demo, should be based on actual notifications
 
   // Search state
   DateTime? _selectedWeddingDate;
-  String? _selectedOrigin;
-  String? _selectedChurch;
-  String? _selectedReception;
+  Place? _selectedOrigin;
+  Place? _selectedChurch;
+  Place? _selectedReception;
   bool _isCalendarExpanded = true;
 
   List<Venue> get venues => _venues;
   List<Booking> get bookings => _bookings;
   User? get currentUser => _currentUser;
   int get currentIndex => _currentIndex;
+  bool get hasInboxNotifications => _hasInboxNotifications;
 
   // Search getters
   DateTime? get selectedWeddingDate => _selectedWeddingDate;
-  String? get selectedOrigin => _selectedOrigin;
-  String? get selectedChurch => _selectedChurch;
-  String? get selectedReception => _selectedReception;
+  Place? get selectedOrigin => _selectedOrigin;
+  Place? get selectedChurch => _selectedChurch;
+  Place? get selectedReception => _selectedReception;
   bool get isCalendarExpanded => _isCalendarExpanded;
 
   void setCurrentIndex(int index) {
@@ -58,17 +61,17 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedOrigin(String? origin) {
+  void setSelectedOrigin(Place? origin) {
     _selectedOrigin = origin;
     notifyListeners();
   }
 
-  void setSelectedChurch(String? church) {
+  void setSelectedChurch(Place? church) {
     _selectedChurch = church;
     notifyListeners();
   }
 
-  void setSelectedReception(String? reception) {
+  void setSelectedReception(Place? reception) {
     _selectedReception = reception;
     notifyListeners();
   }

@@ -23,9 +23,13 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'iOS Firebase configuration not updated for new project.',
+        );
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'macOS Firebase configuration not updated for new project.',
+        );
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
@@ -41,53 +45,31 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA2ZYkuSy0TU-5NYthX6RTL_XyCJlWn6oI',
-    appId: '1:1022252630221:web:20f94ad84ca7eb18b6e984',
-    messagingSenderId: '1022252630221',
-    projectId: 'oh-app---dev',
-    authDomain: 'oh-app---dev.firebaseapp.com',
-    storageBucket: 'oh-app---dev.appspot.com',
-    measurementId: 'G-9HK00QW624',
+    apiKey: 'AIzaSyDk_a7lPHqJBRI2TzxTIMiSPj-E7Xyqizs',
+    appId: '1:272363630855:web:2af7d97ee450efb1d915a2',
+    messagingSenderId: '272363630855',
+    projectId: 'oh-app-bcf24',
+    authDomain: 'oh-app-bcf24.firebaseapp.com',
+    storageBucket: 'oh-app-bcf24.appspot.com',
+    measurementId: 'G-DXDDZKBEJD',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDeLrUgnPTRk36Gwq9V2RlDJEyhUO5fwO8',
-    appId: '1:1022252630221:android:c195d9de6bc5d4cfb6e984',
-    messagingSenderId: '1022252630221',
-    projectId: 'oh-app---dev',
-    storageBucket: 'oh-app---dev.appspot.com',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCZRjiSkGZQG3bi3Wf266XC3ZF89bEuRi0',
-    appId: '1:1022252630221:ios:193b67db44c1bd7db6e984',
-    messagingSenderId: '1022252630221',
-    projectId: 'oh-app---dev',
-    storageBucket: 'oh-app---dev.appspot.com',
-    androidClientId: '1022252630221-250bpeon1s3peogap6b58tv3fpva2l1u.apps.googleusercontent.com',
-    iosClientId: '1022252630221-u0glfo34g8ukjbvr215imb3iu91dp9e8.apps.googleusercontent.com',
-    iosBundleId: 'com.example.wedflix',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCZRjiSkGZQG3bi3Wf266XC3ZF89bEuRi0',
-    appId: '1:1022252630221:ios:193b67db44c1bd7db6e984',
-    messagingSenderId: '1022252630221',
-    projectId: 'oh-app---dev',
-    storageBucket: 'oh-app---dev.appspot.com',
-    androidClientId: '1022252630221-250bpeon1s3peogap6b58tv3fpva2l1u.apps.googleusercontent.com',
-    iosClientId: '1022252630221-u0glfo34g8ukjbvr215imb3iu91dp9e8.apps.googleusercontent.com',
-    iosBundleId: 'com.example.wedflix',
+    apiKey: 'AIzaSyDk_a7lPHqJBRI2TzxTIMiSPj-E7Xyqizs',
+    appId: '1:272363630855:android:f6b6d2dd60366d08d915a2',
+    messagingSenderId: '272363630855',
+    projectId: 'oh-app-bcf24',
+    storageBucket: 'oh-app-bcf24.appspot.com',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAuJBgnRqX5vMUJ4tEjEG9WhTkLMeb_AjY',
-    appId: '1:1022252630221:web:58dca1be4fd75b28b6e984',
-    messagingSenderId: '1022252630221',
-    projectId: 'oh-app---dev',
-    authDomain: 'oh-app---dev.firebaseapp.com',
-    storageBucket: 'oh-app---dev.appspot.com',
-    measurementId: 'G-EBS54Y0LX6',
+    apiKey: 'AIzaSyDk_a7lPHqJBRI2TzxTIMiSPj-E7Xyqizs',
+    appId: '1:272363630855:web:2af7d97ee450efb1d915a2',
+    messagingSenderId: '272363630855',
+    projectId: 'oh-app-bcf24',
+    authDomain: 'oh-app-bcf24.firebaseapp.com',
+    storageBucket: 'oh-app-bcf24.appspot.com',
+    measurementId: 'G-DXDDZKBEJD',
   );
 
 }

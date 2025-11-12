@@ -1,8 +1,8 @@
 {
   "project_info": {
-    "project_number": "1022252630221",
-    "project_id": "oh-app---dev",
-    "storage_bucket": "oh-app---dev.appspot.com"
+    "project_number": "272363630855",
+    "project_id": "oh-app-bcf24",
+    "storage_bucket": "oh-app-bcf24.appspot.com"
   },
   "client": [
     {
@@ -359,20 +359,20 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1022252630221:android:c195d9de6bc5d4cfb6e984",
+        "mobilesdk_app_id": "1:272363630855:android:f6b6d2dd60366d08d915a2",
         "android_client_info": {
           "package_name": "com.example.wedflix"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1022252630221-8atbvl7u5qvu78d4e0erhl36sc08r60t.apps.googleusercontent.com",
+          "client_id": "272363630855-8atbvl7u5qvu78d4e0erhl36sc08r60t.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDeLrUgnPTRk36Gwq9V2RlDJEyhUO5fwO8"
+          "current_key": "AIzaSyDk_a7lPHqJBRI2TzxTIMiSPj-E7Xyqizs"
         }
       ],
       "services": {
