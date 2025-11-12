@@ -132,4 +132,48 @@ class GeoUtils {
            point.longitude >= bounds.southwest.longitude &&
            point.longitude <= bounds.northeast.longitude;
   }
+
+  /// Sample points along a polyline at regular intervals (in meters)
+  static List<LatLng> samplePointsAlongPolyline(List<LatLng> polyline, double intervalMeters) {
+    if (polyline.isEmpty) return [];
+    if (polyline.length == 1) return [polyline[0]];
+
+    final sampledPoints = <LatLng>[];
+    sampledPoints.add(polyline[0]); // Always include the starting point
+
+    double accumulatedDistance = 0.0;
+
+    for (int i = 0; i < polyline.length - 1; i++) {
+      final start = polyline[i];
+      final end = polyline[i + 1];
+      final segmentDistance = haversineDistance(start, end);
+
+      if (accumulatedDistance + segmentDistance >= intervalMeters) {
+        // Calculate how much distance we need to cover in this segment
+        double remainingDistance = intervalMeters - accumulatedDistance;
+
+        while (remainingDistance <= segmentDistance) {
+          // Interpolate point along the segment
+          final ratio = remainingDistance / segmentDistance;
+          final interpolatedPoint = LatLng(
+            start.latitude + ratio * (end.latitude - start.latitude),
+            start.longitude + ratio * (end.longitude - start.longitude),
+          );
+          sampledPoints.add(interpolatedPoint);
+
+          remainingDistance += intervalMeters;
+        }
+        accumulatedDistance = segmentDistance - (remainingDistance - intervalMeters);
+      } else {
+        accumulatedDistance += segmentDistance;
+      }
+    }
+
+    // Ensure we don't have duplicates at the end
+    if (sampledPoints.isNotEmpty && polyline.last != sampledPoints.last) {
+      sampledPoints.add(polyline.last);
+    }
+
+    return sampledPoints;
+  }
 }

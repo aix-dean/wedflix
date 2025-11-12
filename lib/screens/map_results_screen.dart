@@ -433,7 +433,7 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
                                         MaterialPageRoute(
                                           builder: (context) => SiteDetailsScreen(
                                             site: site,
-                                            selectedDate: Provider.of<AppProvider>(context, listen: false).selectedWeddingDate!,
+                                            selectedDate: Provider.of<AppProvider>(context, listen: false).selectedStartDate!,
                                           ),
                                         ),
                                       ),
