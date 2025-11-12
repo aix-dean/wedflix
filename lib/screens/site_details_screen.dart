@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/site.dart';
-import '../models/site_booking.dart';
+import '../models/booking.dart';
 import 'checkout_pay_screen.dart';
 
 class SiteDetailsScreen extends StatefulWidget {
@@ -49,14 +49,22 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
   Future<void> _fetchBookedDates() async {
     try {
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('site_bookings')
-          .where('siteId', isEqualTo: widget.site.id)
+          .collection('bookings')
+          .where('venueId', isEqualTo: widget.site.id)
           .get();
 
-      final bookedDates = querySnapshot.docs
-          .map((doc) => SiteBooking.fromJson(doc.data()))
-          .map((booking) => booking.selectedDate)
-          .toList();
+      final List<DateTime> bookedDates = [];
+      for (final doc in querySnapshot.docs) {
+        final booking = Booking.fromJson(doc.data());
+        if (booking.startDate != null && booking.endDate != null) {
+          // Add all dates from start to end inclusive
+          DateTime current = booking.startDate!;
+          while (current.isBefore(booking.endDate!.add(const Duration(days: 1)))) {
+            bookedDates.add(current);
+            current = current.add(const Duration(days: 1));
+          }
+        }
+      }
 
       setState(() {
         _bookedDates = bookedDates;
@@ -66,6 +74,47 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
       setState(() {
         _isLoadingBookings = false;
       });
+    }
+  }
+
+  Future<void> _showDatePicker() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      selectableDayPredicate: (DateTime date) {
+        // Disable dates that are already booked
+        return !_bookedDates.any((bookedDate) =>
+            bookedDate.year == date.year &&
+            bookedDate.month == date.month &&
+            bookedDate.day == date.day);
+      },
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: const Color(0xFFD42F4D),
+            colorScheme: const ColorScheme.light(primary: Color(0xFFD42F4D)),
+            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (!mounted) return;
+
+    if (picked != null) {
+      // Navigate to checkout with selected date
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CheckoutPayScreen(
+            site: widget.site,
+            selectedDate: picked,
+          ),
+        ),
+      );
     }
   }
 
@@ -120,8 +169,8 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Availability
-                      _buildAvailability(),
+                      // Availability - temporarily hidden
+                      // _buildAvailability(),
 
                       const SizedBox(height: 24),
 
@@ -570,6 +619,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     );
   }
 
+// ignore: unused_element
   Widget _buildAvailability() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,19 +658,22 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
             ),
           ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Select dates',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0A),
+        GestureDetector(
+          onTap: _showDatePicker,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Select dates',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFF0A0A0A)),
-          ],
+              const Icon(Icons.chevron_right, color: Color(0xFF0A0A0A)),
+            ],
+          ),
         ),
       ],
     );
