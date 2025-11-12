@@ -116,12 +116,12 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                       const SizedBox(height: 24),
 
                       // Reviews
-                      _buildReviews(),
+                      // _buildReviews(),
 
                       const SizedBox(height: 24),
 
                       // Availability
-                      _buildAvailability(),
+                      // _buildAvailability(),
 
                       const SizedBox(height: 24),
 
@@ -235,7 +235,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.share),
+                  icon: const Icon(Icons.ios_share),
                   onPressed: () {
                     // TODO: Implement share
                   },
@@ -298,7 +298,8 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                 // TODO: Scroll to reviews
               },
               child: Text(
-                '${widget.site.reviewCount} reviews',
+                // '${widget.site.reviewCount} reviews',
+                'No Reviews',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -453,7 +454,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     );
   }
 
-  Widget _buildReviews() {
+  /* Widget _buildReviews() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -568,9 +569,9 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
         ),
       ],
     );
-  }
+  }*/
 
-  Widget _buildAvailability() {
+  /* Widget _buildAvailability() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -624,7 +625,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
         ),
       ],
     );
-  }
+  } */
 
   Widget _buildCancellationPolicy() {
     return Column(
