@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'map_results_screen.dart';
 
 class ProcessedScreen extends StatelessWidget {
   const ProcessedScreen({super.key});
@@ -69,7 +69,7 @@ class ProcessedScreen extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      MaterialPageRoute(builder: (context) => const MapResultsScreen()),
                     );
                   },
                   style: OutlinedButton.styleFrom(

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart' as my_auth;
+import '../widgets/bottom_nav_component.dart';
 import 'login_screen.dart';
 import 'registration_screen.dart';
+import 'home_screen.dart';
+import 'wishlist_screen.dart';
+import 'trips_screen.dart';
+import 'inbox_screen.dart';
 import '../pages/profile_settings/edit_profile_page.dart';
 import '../pages/profile_settings/payments_page.dart';
 import '../pages/profile_settings/translation_page.dart';
@@ -12,8 +17,46 @@ import '../pages/profile_settings/travel_work_page.dart';
 import '../pages/profile_settings/change_password_page.dart';
 import '../pages/profile_settings/about_page.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  int currentIndex = 4; // Profile is selected
+  bool hasInboxNotifications = false; // TODO: Connect to provider for notifications
+
+  void _onTabSelected(int index) {
+    if (index == currentIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        screen = const WishlistScreen();
+        break;
+      case 2:
+        screen = const TripsScreen();
+        break;
+      case 3:
+        screen = const InboxScreen();
+        break;
+      case 4:
+        screen = const ProfileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,6 +268,11 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavComponent(
+        currentIndex: currentIndex,
+        onTabSelected: _onTabSelected,
+        hasInboxNotifications: hasInboxNotifications,
+      ),
     );
   }
 
@@ -258,55 +306,6 @@ class ProfileScreen extends StatelessWidget {
       height: 1,
       color: const Color(0xFFD8DCE0),
       margin: const EdgeInsets.symmetric(vertical: 0),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Color(0xFFD8DCE0), width: 1),
-        ),
-      ),
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 4, // Profile is selected
-        selectedItemColor: const Color(0xFFD42F4D),
-        unselectedItemColor: const Color(0xFF717375),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Explore',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: 'Wishlist',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.airplanemode_active),
-            label: 'Trips',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message_outlined),
-            label: 'Inbox',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (index) {
-          // TODO: Navigate to different screens
-        },
-      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'providers/app_provider.dart';
 import 'providers/auth_provider.dart' as my_auth;
+import 'screens/entrance_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/wishlist_screen.dart';
 import 'screens/trips_screen.dart';
@@ -42,7 +43,7 @@ class WedFlixApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: const MainScreen(),
+        home: const EntranceScreen(),
       ),
     );
   }

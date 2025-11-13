@@ -1,7 +1,50 @@
 import 'package:flutter/material.dart';
+import '../widgets/bottom_nav_component.dart';
+import 'home_screen.dart';
+import 'wishlist_screen.dart';
+import 'inbox_screen.dart';
+import 'profile_screen.dart';
 
-class TripsScreen extends StatelessWidget {
+class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
+
+  @override
+  State<TripsScreen> createState() => _TripsScreenState();
+}
+
+class _TripsScreenState extends State<TripsScreen> {
+  int currentIndex = 2; // Trips is selected
+  bool hasInboxNotifications = false; // TODO: Connect to provider for notifications
+
+  void _onTabSelected(int index) {
+    if (index == currentIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        screen = const WishlistScreen();
+        break;
+      case 2:
+        screen = const TripsScreen();
+        break;
+      case 3:
+        screen = const InboxScreen();
+        break;
+      case 4:
+        screen = const ProfileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +255,11 @@ class TripsScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavComponent(
+        currentIndex: currentIndex,
+        onTabSelected: _onTabSelected,
+        hasInboxNotifications: hasInboxNotifications,
       ),
     );
   }

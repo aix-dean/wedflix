@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../widgets/bottom_nav_component.dart';
+import 'home_screen.dart';
+import 'wishlist_screen.dart';
+import 'trips_screen.dart';
+import 'profile_screen.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -9,6 +14,8 @@ class InboxScreen extends StatefulWidget {
 
 class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int currentIndex = 3; // Inbox is selected
+  bool hasInboxNotifications = true; // Has notifications
 
   @override
   void initState() {
@@ -20,6 +27,36 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onTabSelected(int index) {
+    if (index == currentIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        screen = const WishlistScreen();
+        break;
+      case 2:
+        screen = const TripsScreen();
+        break;
+      case 3:
+        screen = const InboxScreen();
+        break;
+      case 4:
+        screen = const ProfileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
   }
 
   @override
@@ -137,6 +174,11 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavComponent(
+        currentIndex: currentIndex,
+        onTabSelected: _onTabSelected,
+        hasInboxNotifications: hasInboxNotifications,
+      ),
     );
   }
 
@@ -221,55 +263,6 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
       height: 1,
       color: const Color(0xFFD8DCE0),
       margin: const EdgeInsets.symmetric(horizontal: 24),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Color(0xFFD8DCE0), width: 1),
-        ),
-      ),
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 3, // Inbox is selected
-        selectedItemColor: const Color(0xFFD42F4D),
-        unselectedItemColor: const Color(0xFF717375),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Explore',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: 'Wishlist',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.airplanemode_active),
-            label: 'Trips',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message_outlined),
-            label: 'Inbox',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (index) {
-          // TODO: Navigate to different screens
-        },
-      ),
     );
   }
 }
