@@ -49,7 +49,7 @@ class Booking {
       status: json['status'] ?? 'draft',
       created: json['created'] != null ? DateTime.parse(json['created']) : null,
       quotationId: json['quotation_id'],
-      reservationId: json['reservation_id'],
+      reservationId: json['reservation_id'] ?? 'RV-${DateTime.now().millisecondsSinceEpoch}',
       items: Venue.fromJson(json['items'] ?? {}),
       projectCompliance: json['projectCompliance'],
     );
