@@ -7,6 +7,8 @@ import '../widgets/category_filter.dart';
 import 'search_screen.dart';
 import 'login_screen.dart';
 import '../models/venue.dart';
+import '../services/location_service.dart';
+import '../services/places_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +20,69 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
+
+  List<Place> _places = [];
+  List<Venue> _venues = [];
+  bool _isLoadingPlaces = true;
+  String? _placesError;
+
+  final LocationService _locationService = LocationService();
+  final PlacesService _placesService = PlacesService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNearbyPlaces();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchNearbyPlaces() async {
+    setState(() {
+      _isLoadingPlaces = true;
+      _placesError = null;
+    });
+
+    try {
+      final position = await _locationService.getCurrentLocation();
+      final places = await _placesService.getNearbyPlaces(position.latitude, position.longitude);
+      _places = places;
+      _venues = places.map(_convertPlaceToVenue).toList();
+    } catch (e) {
+      _placesError = e.toString();
+    } finally {
+      setState(() {
+        _isLoadingPlaces = false;
+      });
+    }
+  }
+
+  Venue _convertPlaceToVenue(Place place) {
+    return Venue(
+      id: place.id,
+      iD: place.id,
+      name: place.name,
+      type: place.type,
+      price: 0, // Default price since Places API doesn't provide pricing
+      location: place.address,
+      description: 'Located at ${place.address}',
+      rating: 4.0, // Default rating
+      reviewCount: 0, // Default review count
+      availability: [], // Empty availability
+      media: place.photoUrl != null ? [
+        ProductMedia(
+          url: place.getPhotoUrl(_placesService.apiKey) ?? 'https://via.placeholder.com/400/200?text=No+Image',
+          distance: '0km', // Default distance
+          type: 'image',
+          isVideo: false,
+        )
+      ] : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,21 +218,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Venues List
           Expanded(
-            child: Consumer<AppProvider>(
-              builder: (context, provider, child) {
-                List<Venue> venues = _selectedCategory == 'All'
-                    ? provider.venues
-                    : provider.venues.where((v) => v.type == _selectedCategory).toList();
+            child: _isLoadingPlaces
+                ? const Center(child: CircularProgressIndicator())
+                : _placesError != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Error loading places: $_placesError'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _fetchNearbyPlaces,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Builder(
+                        builder: (context) {
+                          List<Venue> venues = _selectedCategory == 'All'
+                              ? _venues
+                              : _venues.where((v) => v.type == _selectedCategory).toList();
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: venues.length,
-                  itemBuilder: (context, index) {
-                    return VenueCard(venue: venues[index]);
-                  },
-                );
-              },
-            ),
+                          return ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: venues.length,
+                            itemBuilder: (context, index) {
+                              return VenueCard(venue: venues[index]);
+                            },
+                          );
+                        },
+                      ),
           ),
         ],
       ),
