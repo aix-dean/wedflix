@@ -883,6 +883,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         'start_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
         'updated': Timestamp.fromDate(now),
         'url': videoUrl,
+        'reservation_id': 'RV-${now.millisecondsSinceEpoch}',
       };
 
       final docRef = await FirebaseFirestore.instance.collection('booking').add(bookingData);
