@@ -863,15 +863,31 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
 
   Future<void> _createBooking(String status, {String? paymentUrl}) async {
     try {
-      final userId = context.read<AuthProvider>().currentUser?.uid ?? 'anonymous';
+      final user = context.read<AuthProvider>().currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
       final now = DateTime.now();
-      
+
+      // Parse user display name
+      final displayName = user.displayName ?? '';
+      final nameParts = displayName.split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      final clientMap = {
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': user.email ?? '',
+        'middle_name': '',
+        'client_id': user.uid,
+      };
+
       // Extract IDs from site data
       final rawProduct = widget.site.rawData;
       final companyId = rawProduct?['company_id'] ?? 'Pc3HFxYSrwTvTZ8wU84m'; // Default from example
       final productId = rawProduct?['id'] ?? widget.site.id;
       final sellerId = rawProduct?['seller_id'] ?? 'C5Rz6ROQTAegDNMtMXGHzD8CCHU2'; // Default from example
-      
+
       final bookingData = {
         'company_id': companyId,
         'created': Timestamp.fromDate(now),
@@ -883,6 +899,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         'start_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
         'updated': Timestamp.fromDate(now),
         'url': videoUrl,
+        'client': clientMap,
       };
 
       final docRef = await FirebaseFirestore.instance.collection('booking').add(bookingData);

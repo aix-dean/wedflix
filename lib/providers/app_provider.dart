@@ -14,6 +14,8 @@ class AppProvider with ChangeNotifier {
 
   // Search state
   DateTime? _selectedWeddingDate;
+  DateTime? _selectedStartDate;
+  DateTime? _selectedEndDate;
   Place? _selectedOrigin;
   Place? _selectedChurch;
   Place? _selectedReception;
@@ -31,6 +33,8 @@ class AppProvider with ChangeNotifier {
   Place? get selectedChurch => _selectedChurch;
   Place? get selectedReception => _selectedReception;
   bool get isCalendarExpanded => _isCalendarExpanded;
+  DateTime? get selectedStartDate => _selectedStartDate;
+  DateTime? get selectedEndDate => _selectedEndDate;
 
   void setCurrentIndex(int index) {
     _currentIndex = index;
@@ -58,6 +62,15 @@ class AppProvider with ChangeNotifier {
   // Search setters
   void setSelectedWeddingDate(DateTime? date) {
     _selectedWeddingDate = date;
+    notifyListeners();
+  }
+  void setSelectedStartDate(DateTime? date) {
+    _selectedStartDate = date;
+    notifyListeners();
+  }
+
+  void setSelectedEndDate(DateTime? date) {
+    _selectedEndDate = date;
     notifyListeners();
   }
 
