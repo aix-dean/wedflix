@@ -1,22 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:algolia_client_search/algolia_client_search.dart' show SearchClient, SearchParamsObject, IndexClient;
 import '../models/product.dart';
 import '../utils/geo_utils.dart';
 
 class LedSitesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final SearchClient _algoliaClient = SearchClient(
-    appId: 'DHRR76C4T7',
-    apiKey: '33b65c315b7fa94af6b8db4364c14386',
-  );
 
   /// Find LED billboard sites along a route
   Future<List<Map<String, dynamic>>> findSitesAlongRoute({
     required List<LatLng> routePoints,
     LatLngBounds? routeBounds,
-    double radiusMeters = 1000,
-    int maxResults = 50,
+    double radiusMeters = 500,
+    int maxResults = 100,
     int firestoreQueryLimit = 500,
   }) async {
     // Validate inputs
@@ -25,28 +20,16 @@ class LedSitesService {
     }
 
     try {
-      // Sample route points every 500 meters
-      final sampledPoints = GeoUtils.samplePointsAlongPolyline(routePoints, 500.0);
+      // Get all active products (client-side filtering due to nested geopoint structure)
+      final allProducts = await getAllActiveProducts(limit: 1000);
 
-      // Perform Algolia geo-searches for each sampled point
-      final allResults = <String, Map<String, dynamic>>{};
-      final seenIds = <String>{};
-
-      for (final point in sampledPoints) {
-        final results = await _searchNearbySites(point, radiusMeters);
-        for (final result in results) {
-          final id = result['objectID'] as String?;
-          if (id != null && !seenIds.contains(id)) {
-            seenIds.add(id);
-            allResults[id] = result;
-          }
-        }
-      }
-
-      // Convert to list, sort by distance, and limit
-      final sitesList = allResults.values.toList();
-      sitesList.sort((a, b) => (a['distanceMeters'] as double).compareTo(b['distanceMeters'] as double));
-      return sitesList.take(maxResults).toList();
+      // Filter products by distance to route
+      return _filterProductsByRouteDistance(
+        allProducts,
+        routePoints,
+        radiusMeters,
+        maxResults,
+      );
     } catch (e) {
       // Return empty list on error rather than crashing
       return [];
@@ -187,70 +170,49 @@ class LedSitesService {
     }
 
     try {
-      // Perform Algolia geo-searches for each place
-      final allResults = <String, Map<String, dynamic>>{};
-      final seenIds = <String>{};
+      // Get all active products
+      final allProducts = await getAllActiveProducts(limit: 1000);
 
-      for (final place in places) {
-        final results = await _searchNearbySites(place, radiusMeters);
-        for (final result in results) {
-          final id = result['objectID'] as String?;
-          if (id != null && !seenIds.contains(id)) {
-            seenIds.add(id);
-            allResults[id] = result;
+      // Filter products by distance to any of the places
+      final nearbySites = <String, Map<String, dynamic>>{};
+      final addedProductIds = <String>{};
+
+      for (final product in allProducts) {
+        // Skip invalid geopoints
+        if (product.position.latitude == 0 && product.position.longitude == 0) {
+          continue;
+        }
+
+        for (final place in places) {
+          final distanceMeters = GeoUtils.haversineDistance(product.position, place);
+
+          if (distanceMeters <= radiusMeters && !addedProductIds.contains(product.id)) {
+            nearbySites[product.id] = {
+              'markerId': product.siteCode.isNotEmpty ? product.siteCode : product.id,
+              'position': {
+                'lat': product.position.latitude,
+                'lng': product.position.longitude,
+              },
+              'infoWindowTitle': product.name,
+              'infoWindowSnippet': product.markerSnippet,
+              'price': product.price,
+              'distanceMeters': distanceMeters,
+              'rawProduct': product.rawData,
+            };
+            addedProductIds.add(product.id);
+            break; // Add each product only once
           }
         }
       }
 
-      // Convert to list, sort by distance, and limit
-      final sitesList = allResults.values.toList();
+      final sitesList = nearbySites.values.toList();
+
+      // Sort by distance and limit results
       sitesList.sort((a, b) => (a['distanceMeters'] as double).compareTo(b['distanceMeters'] as double));
+
       return sitesList.take(maxResults).toList();
     } catch (e) {
       // Return empty list on error rather than crashing
-      return [];
-    }
-  }
-  /// Search for sites near a specific point using Algolia
-  Future<List<Map<String, dynamic>>> _searchNearbySites(LatLng point, double radiusMeters) async {
-    try {
-      final index = IndexClient(_algoliaClient, 'products');
-      final response = await index.search(
-        SearchParamsObject(
-          query: '',
-          aroundLatLng: '${point.latitude}, ${point.longitude}',
-          aroundRadius: radiusMeters.toInt(),
-          hitsPerPage: 50,
-        ),
-      );
-
-      return response.hits.map((hit) {
-        final data = hit.data;
-        final geoloc = data['_geoloc'];
-        double lat = 0.0;
-        double lng = 0.0;
-        if (geoloc is Map) {
-          lat = (geoloc['lat'] as num?)?.toDouble() ?? 0.0;
-          lng = (geoloc['lng'] as num?)?.toDouble() ?? 0.0;
-        } else if (geoloc is List && geoloc.length >= 2) {
-          lat = (geoloc[0] as num?)?.toDouble() ?? 0.0;
-          lng = (geoloc[1] as num?)?.toDouble() ?? 0.0;
-        }
-
-        final distance = GeoUtils.haversineDistance(point, LatLng(lat, lng));
-
-        return {
-          'objectID': hit.objectID,
-          'markerId': data['siteCode'] ?? hit.objectID ?? '',
-          'position': {'lat': lat, 'lng': lng},
-          'infoWindowTitle': data['name'] ?? '',
-          'infoWindowSnippet': '₱${(data['price'] as num?)?.toDouble() ?? 0.0}',
-          'price': (data['price'] as num?)?.toDouble() ?? 0.0,
-          'distanceMeters': distance,
-          'rawProduct': data,
-        };
-      }).toList();
-    } catch (e) {
       return [];
     }
   }

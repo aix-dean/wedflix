@@ -462,23 +462,21 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: RepaintBoundary(
-              child: IgnorePointer(
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: widget.site.position,
-                    zoom: 15,
-                  ),
-                  markers: markers,
-                  onMapCreated: (controller) {
-                    mapController = controller;
-                  },
-                  zoomControlsEnabled: false,
-                  mapToolbarEnabled: false,
-                  zoomGesturesEnabled: false,
-                  scrollGesturesEnabled: false,
-                  tiltGesturesEnabled: false,
-                  rotateGesturesEnabled: false,
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: widget.site.position,
+                  zoom: 15,
                 ),
+                markers: markers,
+                onMapCreated: (controller) {
+                  mapController = controller;
+                },
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                zoomGesturesEnabled: false,
+                scrollGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+                rotateGesturesEnabled: false,
               ),
             ),
           ),
