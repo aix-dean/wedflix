@@ -11,12 +11,14 @@ import '../providers/app_provider.dart';
 
 class CheckoutPayScreen extends StatefulWidget {
   final Site site;
-  final DateTime selectedDate;
+  final DateTime startDate;
+  final DateTime endDate;
 
   const CheckoutPayScreen({
     super.key,
     required this.site,
-    required this.selectedDate,
+    required this.startDate,
+    required this.endDate,
   });
 
   @override
@@ -195,6 +197,11 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   }
 
   Widget _buildDatesSection() {
+    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+    final dateRangeText = widget.startDate == widget.endDate
+        ? '${_getMonthName(widget.startDate.month)} ${widget.startDate.day}, ${widget.startDate.year}'
+        : '${_getMonthName(widget.startDate.month)} ${widget.startDate.day} - ${_getMonthName(widget.endDate.month)} ${widget.endDate.day}, ${widget.endDate.year}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,7 +215,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         ),
         const SizedBox(height: 2),
         Text(
-          '${_getMonthName(widget.selectedDate.month)} ${widget.selectedDate.day}, ${widget.selectedDate.year}',
+          dateRangeText,
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF717375),
@@ -238,6 +245,9 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   }
 
   Widget _buildTotalPriceSection() {
+    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+    final totalPrice = widget.site.price * numberOfDays;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,7 +261,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         ),
         const SizedBox(height: 2),
         Text(
-          '${_getMonthName(widget.selectedDate.month)} ${widget.selectedDate.day}, ${widget.selectedDate.year}',
+          '₱${totalPrice.toStringAsFixed(0)} for $numberOfDays ${numberOfDays == 1 ? 'day' : 'days'}',
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF717375),
@@ -614,6 +624,9 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   }
 
   Widget _buildPriceDetailsSection() {
+    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+    final totalPrice = widget.site.price * numberOfDays;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -632,14 +645,14 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '1 day x ₱${widget.site.price.toStringAsFixed(0)}',
+              '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'} x ₱${widget.site.price.toStringAsFixed(0)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF717375),
               ),
             ),
             Text(
-              '₱${widget.site.price.toStringAsFixed(0)}',
+              '₱${totalPrice.toStringAsFixed(0)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF717375),
@@ -664,7 +677,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
               ),
             ),
             Text(
-              '₱${widget.site.price.toStringAsFixed(0)}',
+              '₱${totalPrice.toStringAsFixed(0)}',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -828,9 +841,10 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         });
 
         final userEmail = context.read<AuthProvider>().currentUser?.email;
+        final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
         final invoice = await _paymentService.createInvoice(
-          amount: widget.site.price.toInt() < 100 ? 100 : widget.site.price.toInt(),
-          description: '${widget.site.name} - ${widget.selectedDate.toString().split(' ')[0]}',
+          amount: (widget.site.price * numberOfDays).toInt() < 100 ? 100 : (widget.site.price * numberOfDays).toInt(),
+          description: '${widget.site.name} - ${widget.startDate.toString().split(' ')[0]} to ${widget.endDate.toString().split(' ')[0]}',
           payerEmail: (userEmail != null && userEmail.contains('@')) ? userEmail : 'test@example.com',
         );
 
@@ -870,16 +884,11 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
 
       // Parse user display name
       final displayName = user.displayName ?? '';
-      final nameParts = displayName.split(' ');
-      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
-      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
       final clientMap = {
-        'first_name': firstName,
-        'last_name': lastName,
         'email': user.email ?? '',
-        'middle_name': '',
-        'client_id': user.uid,
+        'id': user.uid,
+        'name': displayName,
       };
 
       // Extract IDs from site data
@@ -891,12 +900,12 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
       final bookingData = {
         'company_id': companyId,
         'created': Timestamp.fromDate(now),
-        'end_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
+        'end_date': Timestamp.fromDate(widget.endDate.toUtc()),
         'for_censorship': 0,
         'for_screening': 1,
         'product_id': productId,
         'seller_id': sellerId,
-        'start_date': Timestamp.fromDate(widget.selectedDate.toUtc()),
+        'start_date': Timestamp.fromDate(widget.startDate.toUtc()),
         'updated': Timestamp.fromDate(now),
         'url': videoUrl,
         'client': clientMap,

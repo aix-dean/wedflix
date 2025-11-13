@@ -35,7 +35,7 @@ class FileUploadService {
     try {
       // Create unique file name
       String fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
-      String path = 'videos/$userId/$fileName';
+      String path = fileName;
 
       Reference ref = _storage.ref().child(path);
 
