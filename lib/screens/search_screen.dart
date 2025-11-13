@@ -5,6 +5,7 @@ import '../services/location_service.dart';
 import '../services/places_service.dart';
 import '../models/venue.dart'; // Wait, no, Place is in places_service
 import 'loading_screen.dart';
+import 'map_results_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -208,10 +209,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                           alignment: Alignment.centerRight,
                                           child: GestureDetector(
                                             onTap: () {
-                                              if (provider.selectedEndDate == null) {
+                                              if (provider.selectedStartDate == null) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(
-                                                    content: Text('Please select a date range'),
+                                                    content: Text('Please select a date'),
                                                   ),
                                                 );
                                               } else {
@@ -259,7 +260,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                         ),
                                       ),
                                       Text(
-                                        provider.selectedStartDate == null ? 'Select' : provider.selectedEndDate == null ? 'Start: ${provider.selectedStartDate!.day}/${provider.selectedStartDate!.month}/${provider.selectedStartDate!.year}' : '${provider.selectedStartDate!.day}/${provider.selectedStartDate!.month}/${provider.selectedStartDate!.year} - ${provider.selectedEndDate!.day}/${provider.selectedEndDate!.month}/${provider.selectedEndDate!.year}',
+                                        provider.selectedStartDate == null ? 'Select' : provider.selectedEndDate != null ? '${provider.selectedStartDate!.day}/${provider.selectedStartDate!.month}/${provider.selectedStartDate!.year} - ${provider.selectedEndDate!.day}/${provider.selectedEndDate!.month}/${provider.selectedEndDate!.year}' : '${provider.selectedStartDate!.day}/${provider.selectedStartDate!.month}/${provider.selectedStartDate!.year}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
@@ -339,14 +340,13 @@ class _SearchScreenState extends State<SearchScreen> {
                       GestureDetector(
                         onTap: () {
                           bool allFilled = provider.selectedStartDate != null &&
-                              provider.selectedEndDate != null &&
                               provider.selectedOrigin != null &&
                               provider.selectedChurch != null &&
                               provider.selectedReception != null;
                           if (allFilled) {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const LoadingScreen()),
+                              MaterialPageRoute(builder: (context) => const LoadingScreen(nextScreen: MapResultsScreen())),
                             );
                           }
                         },
@@ -354,7 +354,6 @@ class _SearchScreenState extends State<SearchScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           decoration: BoxDecoration(
                             color: (provider.selectedStartDate != null &&
-                                    provider.selectedEndDate != null &&
                                     provider.selectedOrigin != null &&
                                     provider.selectedChurch != null &&
                                     provider.selectedReception != null)
@@ -444,41 +443,79 @@ class _SearchScreenState extends State<SearchScreen> {
               : GestureDetector(
                   onTap: () {
                     DateTime tappedDate = DateTime(currentMonth.year, currentMonth.month, day);
-                    if (provider.selectedStartDate == null || (provider.selectedStartDate != null && provider.selectedEndDate != null)) {
+                    DateTime today = DateTime.now();
+                    DateTime todayOnly = DateTime(today.year, today.month, today.day);
+
+                    // Prevent selecting past dates
+                    if (tappedDate.isBefore(todayOnly)) {
+                      return;
+                    }
+
+                    // Handle date range selection
+                    if (provider.selectedStartDate == null) {
+                      // No start date selected - set as start date
                       provider.setSelectedStartDate(tappedDate);
                       provider.setSelectedEndDate(null);
-                    } else {
-                      if (tappedDate.isAfter(provider.selectedStartDate!)) {
+                    } else if (provider.selectedEndDate == null) {
+                      // Start date selected, no end date - set as end date
+                      if (tappedDate.isAfter(provider.selectedStartDate!) || tappedDate.isAtSameMomentAs(provider.selectedStartDate!)) {
                         provider.setSelectedEndDate(tappedDate);
                       } else {
+                        // If tapped date is before start date, set it as new start date
                         provider.setSelectedStartDate(tappedDate);
                         provider.setSelectedEndDate(null);
                       }
+                    } else {
+                      // Both dates selected - start over with new selection
+                      provider.setSelectedStartDate(tappedDate);
+                      provider.setSelectedEndDate(null);
                     }
                   },
                   child: Builder(
                     builder: (context) {
-                      bool isStart = provider.selectedStartDate?.year == currentMonth.year && provider.selectedStartDate?.month == currentMonth.month && provider.selectedStartDate?.day == day;
-                      bool isEnd = provider.selectedEndDate?.year == currentMonth.year && provider.selectedEndDate?.month == currentMonth.month && provider.selectedEndDate?.day == day;
-                      bool isBetween = provider.selectedStartDate != null && provider.selectedEndDate != null &&
-                        DateTime(currentMonth.year, currentMonth.month, day).isAfter(provider.selectedStartDate!) &&
-                        DateTime(currentMonth.year, currentMonth.month, day).isBefore(provider.selectedEndDate!);
-                      Color bgColor = isStart || isEnd ? Colors.black : isBetween ? Colors.grey[300]! : Colors.white;
-                      Color textColor = isStart || isEnd ? Colors.white : Colors.black;
-                      return Container(
-                        height: 42,
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Center(
-                          child: Text(
-                            day.toString(),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: textColor,
+                      DateTime tappedDate = DateTime(currentMonth.year, currentMonth.month, day);
+                      DateTime today = DateTime.now();
+                      DateTime todayOnly = DateTime(today.year, today.month, today.day);
+                      bool isPastDate = tappedDate.isBefore(todayOnly);
+
+                      // Check if date is within selected range
+                      bool isSelected = false;
+                      if (provider.selectedStartDate != null) {
+                        if (provider.selectedEndDate != null) {
+                          // Range selection - check if date is between start and end (inclusive)
+                          isSelected = (tappedDate.isAfter(provider.selectedStartDate!.subtract(const Duration(days: 1))) &&
+                              tappedDate.isBefore(provider.selectedEndDate!.add(const Duration(days: 1))));
+                        } else {
+                          // Only start date selected - check if it's the start date
+                          isSelected = tappedDate.isAtSameMomentAs(provider.selectedStartDate!);
+                        }
+                      }
+
+                      return Opacity(
+                        opacity: isPastDate ? 0.5 : 1.0,
+                        child: Container(
+                          height: 42,
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isPastDate
+                                ? Colors.grey[200]
+                                : isSelected
+                                    ? Colors.black
+                                    : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Center(
+                            child: Text(
+                              day.toString(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isPastDate
+                                    ? Colors.grey
+                                    : isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                              ),
                             ),
                           ),
                         ),

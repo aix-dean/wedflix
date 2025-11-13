@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/places_service.dart';
 import '../services/led_sites_service.dart';
@@ -303,7 +304,7 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '₱${site['price'].toStringAsFixed(2)}',
+              Site.fromLedSiteData(site).formattedPrice,
               style: const TextStyle(fontSize: 18, color: Colors.green, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
@@ -322,14 +323,19 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
   }
 
   String _getPriceForPlace(Place place) {
+    double price;
     switch (place.type) {
       case 'church':
-        return '\$500';
+        price = 500;
+        break;
       case 'reception':
-        return '\$1000';
+        price = 1000;
+        break;
       default:
         return 'Price not available';
     }
+    String numberStr = price >= 1000 ? NumberFormat('#,###').format(price) : price.toStringAsFixed(0);
+    return '\$$numberStr / Day';
   }
 
   @override

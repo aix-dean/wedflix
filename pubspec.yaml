@@ -49,6 +49,7 @@ dependencies:
   cached_network_image: ^3.4.1
   file_picker: ^8.0.0+1
   url_launcher: ^6.2.5
+  chewie: ^1.7.1
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +77,7 @@ flutter:
   assets:
     - assets/nav_icons/
     - assets/loading_icon/gen4_turbo.mp4
+    - assets/payment_icons/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
