@@ -8,9 +8,10 @@ import 'checkout_pay_screen.dart';
 
 class SiteDetailsScreen extends StatefulWidget {
   final Site site;
-  final DateTime selectedDate;
+  final DateTime startDate;
+  final DateTime endDate;
 
-  const SiteDetailsScreen({super.key, required this.site, required this.selectedDate});
+  const SiteDetailsScreen({super.key, required this.site, required this.startDate, required this.endDate});
 
   @override
   State<SiteDetailsScreen> createState() => _SiteDetailsScreenState();
@@ -78,18 +79,14 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
   }
 
   Future<void> _showDatePicker() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      selectableDayPredicate: (DateTime date) {
-        // Disable dates that are already booked
-        return !_bookedDates.any((bookedDate) =>
-            bookedDate.year == date.year &&
-            bookedDate.month == date.month &&
-            bookedDate.day == date.day);
-      },
+      initialDateRange: DateTimeRange(
+        start: widget.startDate,
+        end: widget.endDate,
+      ),
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -105,13 +102,14 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
     if (!mounted) return;
 
     if (picked != null) {
-      // Navigate to checkout with selected date
+      // Navigate to checkout with selected date range
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => CheckoutPayScreen(
             site: widget.site,
-            selectedDate: picked,
+            startDate: picked.start,
+            endDate: picked.end,
           ),
         ),
       );
@@ -805,7 +803,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                     ),
                   ),
                   Text(
-                    DateFormat('MMM d, y').format(widget.selectedDate),
+                    '${DateFormat('MMM d').format(widget.startDate)} - ${DateFormat('MMM d, y').format(widget.endDate)}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF0A0A0A),
@@ -822,7 +820,8 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                   MaterialPageRoute(
                     builder: (context) => CheckoutPayScreen(
                       site: widget.site,
-                      selectedDate: widget.selectedDate,
+                      startDate: widget.startDate,
+                      endDate: widget.endDate,
                     ),
                   ),
                 );
