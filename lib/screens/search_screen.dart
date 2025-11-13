@@ -130,7 +130,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
-                        const SizedBox(height: 16),
                       children: [
                         // Calendar Card
                         AnimatedContainer(
