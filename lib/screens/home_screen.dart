@@ -187,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Categories
           SizedBox(
-            height: 50,
+            height: 40,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -216,6 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // Space Between Categories and List
+          SizedBox(height: 10),
+
           // Venues List
           Expanded(
             child: _isLoadingPlaces
@@ -226,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text('Error loading places: $_placesError'),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 30),
                             ElevatedButton(
                               onPressed: _fetchNearbyPlaces,
                               child: const Text('Retry'),

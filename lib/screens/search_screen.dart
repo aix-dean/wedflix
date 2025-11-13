@@ -130,18 +130,20 @@ class _SearchScreenState extends State<SearchScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
+                        const SizedBox(height: 16),
                       children: [
                         // Calendar Card
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.all(24),
-                          padding: const EdgeInsets.all(24),
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.24),
+                                color: Colors.black.withOpacity(0.08),
                                 blurRadius: 18,
                                 offset: const Offset(0, 4),
                               ),
@@ -221,7 +223,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                             },
                                             child: Container(
                                               width: 132,
-                                              padding: const EdgeInsets.only(top: 14, right: 48, bottom: 14, left: 48),
+                                              padding: const EdgeInsets.only(top: 14, right: 40, bottom: 14, left: 48),
                                               decoration: BoxDecoration(
                                                 color: Colors.black,
                                                 borderRadius: BorderRadius.circular(8),
@@ -247,6 +249,31 @@ class _SearchScreenState extends State<SearchScreen> {
                                   onTap: () {
                                     provider.setIsCalendarExpanded(true);
                                   },
+                                  
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'When',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF717375),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        provider.selectedStartDate == null ? 'Select' : provider.selectedEndDate == null ? 'Start: ${provider.selectedStartDate!.day}/${provider.selectedStartDate!.month}/${provider.selectedStartDate!.year}' : '${_getMonthName(provider.selectedStartDate!.month)} ${provider.selectedStartDate!.day}, ${provider.selectedStartDate!.year} - ${_getMonthName(provider.selectedStartDate!.month)} ${provider.selectedEndDate!.day}, ${provider.selectedEndDate!.year}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                  /*
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
@@ -268,24 +295,25 @@ class _SearchScreenState extends State<SearchScreen> {
                                       ),
                                     ],
                                   ),
-                                ),
+                                ),*/
                         ),
 
+                        const SizedBox(height: 18),
                         // Search Fields with collapsible cards
                         _buildSelectionCard(
-                          label: 'Place of Origin',
+                          label: 'Lodging',
                           value: provider.selectedOrigin?.name ?? 'Select',
                           type: 'origin',
                           expandedContent: _buildOriginExpandedContent(provider),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
                         _buildSelectionCard(
                           label: 'Church',
                           value: provider.selectedChurch?.name ?? 'Select',
                           type: 'church',
                           expandedContent: _buildChurchExpandedContent(provider),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
                         _buildSelectionCard(
                           label: 'Reception',
                           value: provider.selectedReception?.name ?? 'Select',
@@ -293,7 +321,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           expandedContent: _buildReceptionExpandedContent(provider),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),
@@ -316,7 +344,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           provider.setSelectedOrigin(null);
                           provider.setSelectedChurch(null);
                           provider.setSelectedReception(null);
-                          provider.setIsCalendarExpanded(false);
+                          provider.setIsCalendarExpanded(true);
                           originSearchController.clear();
                           churchSearchController.clear();
                           receptionSearchController.clear();
@@ -504,19 +532,73 @@ class _SearchScreenState extends State<SearchScreen> {
       builder: (context, provider, child) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.24),
+                color: Colors.black.withOpacity(0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
+
+          child: activeSelection == type
+    ? expandedContent
+    : GestureDetector(
+        onTap: () {
+          _onSelectionChanged(type);
+        },
+        child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF717375),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            /*: Row(
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF717375),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),*/
+      ),
+
+          /*
           child: activeSelection == type
               ? expandedContent
               : GestureDetector(
@@ -544,7 +626,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ],
                   ),
-                ),
+                ),*/
         );
       },
     );
@@ -563,7 +645,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 });
               },
               child: Text(
-                'Where are you from?',
+                'Lodging',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w500,

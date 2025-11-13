@@ -75,7 +75,7 @@ class VenueCard extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
-                  // Location
+                  /* // Location
                   Row(
                     children: [
                       Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
@@ -83,6 +83,20 @@ class VenueCard extends StatelessWidget {
                       Text(
                         venue.location,
                         style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ), */
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          venue.location,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                       ),
                     ],
                   ),
