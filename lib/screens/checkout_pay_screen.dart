@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 import '../models/site.dart';
-import '../models/site_booking.dart';
 import '../services/file_upload_service.dart';
 import '../services/payment_service.dart';
 import '../providers/auth_provider.dart';
-import '../providers/app_provider.dart';
+import 'loading_screen.dart';
+import 'processed_screen.dart';
 
 class CheckoutPayScreen extends StatefulWidget {
   final Site site;
@@ -27,7 +29,6 @@ class CheckoutPayScreen extends StatefulWidget {
 
 class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   final FileUploadService _fileUploadService = FileUploadService();
-  final PaymentService _paymentService = PaymentService();
 
   String selectedPaymentMethod = 'GCash';
   bool isUploading = false;
@@ -35,12 +36,15 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
   String? videoUrl;
   bool isProcessingPayment = false;
   String? errorMessage;
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+  bool _isVideoInitialized = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
+        title: const Text('Confirm and Pay'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -55,23 +59,34 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Site Information Card
-              _buildSiteInfoCard(),
-
-              const SizedBox(height: 24),
-
-              // Dates Section
-              _buildDatesSection(),
-
-              const SizedBox(height: 24),
-
-              // Total Price Section
-              _buildTotalPriceSection(),
-
-              const SizedBox(height: 24),
-
-              // Content Section
-              _buildContentSection(),
+              // Big Card for site to content
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFD8DCE0)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    _buildSiteInfoContent(),
+                    const SizedBox(height: 8),
+                    const Divider(color: Color(0xFFD8DCE0)),
+                    const SizedBox(height: 8),
+                    _buildDatesContent(),
+                    const SizedBox(height: 8),
+                    const Divider(color: Color(0xFFD8DCE0)),
+                    const SizedBox(height: 8),
+                    _buildTotalPriceContent(),
+                    const SizedBox(height: 8),
+                    const Divider(color: Color(0xFFD8DCE0)),
+                    _buildContentContent(),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 24),
 
@@ -92,151 +107,114 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
     );
   }
 
-  Widget _buildSiteInfoCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFD8DCE0)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Site Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Image.network(
-              widget.site.imageUrl,
-              width: 90,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 90,
-                  height: 90,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.business, size: 32),
-                );
-              },
-            ),
+  Widget _buildSiteInfoContent() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Site Image
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.network(
+            widget.site.imageUrl,
+            width: 90,
+            height: 90,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 90,
+                height: 90,
+                color: Colors.grey[300],
+                child: const Icon(Icons.business, size: 32),
+              );
+            },
           ),
-          const SizedBox(width: 16),
+        ),
+        const SizedBox(width: 16),
 
-          // Site Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.site.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+        // Site Details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.site.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Rating
+              Row(
+                children: [
+                  const Icon(
+                    Icons.star,
+                    size: 18,
                     color: Color(0xFF0A0A0A),
                   ),
-                ),
-                const SizedBox(height: 8),
-
-                // Rating
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 18,
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.site.rating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 16,
                       color: Color(0xFF0A0A0A),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      widget.site.rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Location
-                Text(
-                  widget.site.location,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF717375),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Change Button
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFD8DCE0)),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Text(
-                      'Change',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDatesSection() {
-    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+  Widget _buildDatesContent() {
     final dateRangeText = widget.startDate == widget.endDate
         ? '${_getMonthName(widget.startDate.month)} ${widget.startDate.day}, ${widget.startDate.year}'
         : '${_getMonthName(widget.startDate.month)} ${widget.startDate.day} - ${_getMonthName(widget.endDate.month)} ${widget.endDate.day}, ${widget.endDate.year}';
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Dates',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF0A0A0A),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          dateRangeText,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF717375),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD8DCE0)),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Text(
-              'Change',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0A),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Dates',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                dateRangeText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF717375),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD8DCE0)),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Text(
+            'Change',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
             ),
           ),
         ),
@@ -244,45 +222,48 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
     );
   }
 
-  Widget _buildTotalPriceSection() {
+  Widget _buildTotalPriceContent() {
     final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
     final totalPrice = widget.site.price * numberOfDays;
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Total price',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF0A0A0A),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '₱${totalPrice.toStringAsFixed(0)} for $numberOfDays ${numberOfDays == 1 ? 'day' : 'days'}',
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF717375),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD8DCE0)),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Text(
-              'Details',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0A),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Total price',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)} for $numberOfDays ${numberOfDays == 1 ? 'day' : 'days'}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF717375),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD8DCE0)),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Text(
+            'Details',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
             ),
           ),
         ),
@@ -290,7 +271,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
     );
   }
 
-  Widget _buildContentSection() {
+  Widget _buildContentContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -303,90 +284,629 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Please upload a video with a 5:6 aspect ratio in MP4 format. Our system will automatically adjust it to fit the LED screen\'s resolution.',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF717375),
+        RichText(
+          text: const TextSpan(
+            text: 'Please upload a video with a ',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF717375),
+            ),
+            children: [
+              TextSpan(
+                text: '5:6 aspect ratio',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextSpan(text: ' in '),
+              TextSpan(
+                text: 'MP4',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextSpan(text: ' format. Our system will automatically adjust it to fit the LED screen\'s resolution.'),
+            ],
           ),
         ),
         const SizedBox(height: 16),
 
-        // Upload Area
-        Container(
-          height: 200,
+        // Upload Area - Optimized with Chewie for better controls and responsive layout
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: AspectRatio(
+            aspectRatio: 5 / 6, // Maintain 5:6 aspect ratio for portrait video
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: videoUrl != null
+                  ? _isVideoInitialized && _chewieController != null
+                      ? Chewie(
+                          controller: _chewieController!,
+                        )
+                      : const Center(child: CircularProgressIndicator())
+                  : isUploading
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Uploading... ${(uploadProgress * 100).toInt()}%',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF5D5F61),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              onPressed: _pickAndUploadVideo,
+                              icon: const Icon(
+                                Icons.file_upload,
+                                size: 36,
+                                color: Color(0xFF5D5F61),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Upload your content',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF5D5F61),
+                              ),
+                            ),
+                          ],
+                        ),
+            ),
+          ),
+        ),
+// Change button when video is uploaded
+if (videoUrl != null)
+  Row(
+    children: [
+      const Spacer(),
+      GestureDetector(
+        onTap: _showChangeContentDialog,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F7F7),
-            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD8DCE0)),
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: videoUrl != null
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      size: 36,
-                      color: Colors.green,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Video uploaded successfully',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                )
-              : isUploading
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Uploading... ${(uploadProgress * 100).toInt()}%',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF5D5F61),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          onPressed: _pickAndUploadVideo,
-                          icon: const Icon(
-                            Icons.file_upload,
-                            size: 36,
-                            color: Color(0xFF5D5F61),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Upload your content',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF5D5F61),
-                          ),
-                        ),
-                      ],
-                    ),
+          child: const Text(
+            'Change',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
+            ),
+          ),
         ),
-
+      ),
+    ],
+  ),
+        
         const SizedBox(height: 16),
-
+        
+        const Divider(color: Color(0xFFD8DCE0)),
+        
+        const SizedBox(height: 16),
+        
         // Refund Policy
-        const Text(
-          'This booking is refundable 7 days before your breakdate. Full policy.',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF717375),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 16),
+          child: RichText(
+            text: const TextSpan(
+              text: 'This booking is refundable 3 days before your breakdate. ',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF717375),
+              ),
+              children: [
+                TextSpan(
+                  text: 'Full policy.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentMethodContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Payment method',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF0A0A0A),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Payment Method Options
+        Column(
+          children: [
+            // GCash Option
+            GestureDetector(
+              onTap: () => _selectPaymentMethod('GCash'),
+              child: Row(
+                children: [
+                  // GCash Icon
+                  Container(
+                    width: 42,
+                    height: 26,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(
+                        Icons.account_balance_wallet,
+                        size: 20,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'GCash',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF0A0A0A),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    selectedPaymentMethod == 'GCash'
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: selectedPaymentMethod == 'GCash'
+                        ? const Color(0xFFD42F4D)
+                        : const Color(0xFF5D5F61),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 1332 Option
+            GestureDetector(
+              onTap: () => _selectPaymentMethod('1332'),
+              child: Row(
+                children: [
+                  // 1332 Icon
+                  Container(
+                    width: 42,
+                    height: 26,
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Text(
+                        'Credit/Debit Card',
+                        style: TextStyle(fontSize: 10, color: Colors.green),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Credit/Debit Card',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF0A0A0A),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    selectedPaymentMethod == 'Credit/Debit Card'
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: selectedPaymentMethod == 'Credit/Debit Card'
+                        ? const Color(0xFFD42F4D)
+                        : const Color(0xFF5D5F61),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // More options
+            Row(
+              children: [
+                const Text(
+                  'More options',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0A0A0A),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: const Color(0xFF5D5F61),
+                ),
+              ],
+            ),
+
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceDetailsContent() {
+    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+    final totalPrice = widget.site.price * numberOfDays;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Price details',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF0A0A0A),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Price Breakdown
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'} x ₱${widget.site.price >= 1000 ? NumberFormat('#,###').format(widget.site.price) : widget.site.price.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF717375),
+              ),
+            ),
+            Text(
+              '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF717375),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Total
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Total PHP',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF0A0A0A),
+                decoration: TextDecoration.underline,
+              ),
+            ),
+            Text(
+              '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF0A0A0A),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        const Text(
+          'Price breakdown',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF0A0A0A),
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatesSection() {
+    final dateRangeText = widget.startDate == widget.endDate
+        ? '${_getMonthName(widget.startDate.month)} ${widget.startDate.day}, ${widget.startDate.year}'
+        : '${_getMonthName(widget.startDate.month)} ${widget.startDate.day} - ${_getMonthName(widget.endDate.month)} ${widget.endDate.day}, ${widget.endDate.year}';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD8DCE0)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Dates',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            dateRangeText,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF717375),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFD8DCE0)),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Text(
+                'Change',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalPriceSection() {
+    final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+    final totalPrice = widget.site.price * numberOfDays;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD8DCE0)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Total price',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)} for $numberOfDays ${numberOfDays == 1 ? 'day' : 'days'}',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF717375),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFD8DCE0)),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Text(
+                'Details',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD8DCE0)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Content',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
+            ),
+          ),
+          const SizedBox(height: 16),
+          RichText(
+            text: const TextSpan(
+              text: 'Please upload a video with a ',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF717375),
+              ),
+              children: [
+                TextSpan(
+                  text: '5:6 aspect ratio',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextSpan(text: ' in '),
+                TextSpan(
+                  text: 'MP4',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextSpan(text: ' format. Our system will automatically adjust it to fit the LED screen\'s resolution.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Upload Area
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              width: double.infinity,
+              height: 200,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            child: videoUrl != null
+                ? _isVideoInitialized
+                    ? Stack(
+                        children: [
+                          VideoPlayer(_videoController!),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              color: Colors.black.withOpacity(0.5),
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      _videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        if (_videoController!.value.isPlaying) {
+                                          _videoController!.pause();
+                                        } else {
+                                          _videoController!.play();
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  Expanded(
+                                    child: VideoProgressIndicator(
+                                      _videoController!,
+                                      allowScrubbing: true,
+                                      colors: const VideoProgressColors(
+                                        playedColor: Colors.red,
+                                        bufferedColor: Colors.white,
+                                        backgroundColor: Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const CircularProgressIndicator()
+                : isUploading
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Uploading... ${(uploadProgress * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF5D5F61),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            onPressed: _pickAndUploadVideo,
+                            icon: const Icon(
+                              Icons.file_upload,
+                              size: 36,
+                              color: Color(0xFF5D5F61),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Upload your content',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF5D5F61),
+                            ),
+                          ),
+                        ],
+                      ),
+          ),
+          ),
+
+          const SizedBox(height: 16),
+  
+          const Divider(color: Color(0xFFD8DCE0)),
+  
+          // Refund Policy
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 16),
+            child: RichText(
+              text: const TextSpan(
+                text: 'This booking is refundable 3 days before your breakdate. ',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF717375),
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Full policy.',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -414,208 +934,127 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
           ),
           child: Column(
             children: [
-              // Cash on Delivery Option
-              GestureDetector(
-                onTap: () => _selectPaymentMethod('Cash on Delivery'),
-                child: Row(
-                  children: [
-                    // Cash on Delivery Logo Placeholder
-                    Container(
-                      width: 42,
-                      height: 26,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Text(
-                          'COD',
-                          style: TextStyle(fontSize: 10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Cash on Delivery',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      selectedPaymentMethod == 'Cash on Delivery'
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: selectedPaymentMethod == 'Cash on Delivery'
-                          ? const Color(0xFFD42F4D)
-                          : const Color(0xFF5D5F61),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
               // GCash Option
-              GestureDetector(
-                onTap: () => _selectPaymentMethod('GCash'),
-                child: Row(
-                  children: [
-                    // GCash Logo Placeholder
-                    Container(
-                      width: 42,
-                      height: 26,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Text(
-                          'GCash',
-                          style: TextStyle(fontSize: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: GestureDetector(
+                  onTap: () => _selectPaymentMethod('GCash'),
+                  child: Row(
+                    children: [
+                      // GCash Icon
+                      Container(
+                        width: 42,
+                        height: 26,
+                        child: Image.asset(
+                          'assets/payment_icons/a822b87c174252ab4fe0522615f8fd7836921421.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'GCash',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'GCash',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF0A0A0A),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      selectedPaymentMethod == 'GCash'
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: selectedPaymentMethod == 'GCash'
-                          ? const Color(0xFFD42F4D)
-                          : const Color(0xFF5D5F61),
-                    ),
-                  ],
+                      const Spacer(),
+                      Icon(
+                        selectedPaymentMethod == 'GCash'
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: selectedPaymentMethod == 'GCash'
+                            ? const Color(0xFFD42F4D)
+                            : const Color(0xFF5D5F61),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const Divider(color: Color(0xFFD8DCE0)),
+
+              // 1332 Option
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: GestureDetector(
+                  onTap: () => _selectPaymentMethod('Credit/Debit Card'),
+                  child: Row(
+                    children: [
+                      // 1332 Icon
+                      Container(
+                        width: 42,
+                        height: 26,
+                        child: Image.asset(
+                          'assets/payment_icons/mastercard.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Credit/Debit Card',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF0A0A0A),
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        selectedPaymentMethod == '1332'
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: selectedPaymentMethod == '1332'
+                            ? const Color(0xFFD42F4D)
+                            : const Color(0xFF5D5F61),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Divider(color: Color(0xFFD8DCE0)),
 
               // Maya Option
-              GestureDetector(
-                onTap: () => _selectPaymentMethod('Maya'),
-                child: Row(
-                  children: [
-                    // Maya Logo Placeholder
-                    Container(
-                      width: 42,
-                      height: 26,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Text(
-                          'Maya',
-                          style: TextStyle(fontSize: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: GestureDetector(
+                  onTap: () => _selectPaymentMethod('Maya'),
+                  child: Row(
+                    children: [
+                      // Maya Icon
+                      Container(
+                        width: 42,
+                        height: 26,
+                        child: Image.asset(
+                          'assets/payment_icons/maya.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Maya',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
+                      const SizedBox(width: 16),
+                      const Text(
+                        'Maya',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF0A0A0A),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      selectedPaymentMethod == 'Maya'
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: selectedPaymentMethod == 'Maya'
-                          ? const Color(0xFFD42F4D)
-                          : const Color(0xFF5D5F61),
-                    ),
-                  ],
+                      const Spacer(),
+                      Icon(
+                        selectedPaymentMethod == 'Maya'
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: selectedPaymentMethod == 'Maya'
+                            ? const Color(0xFFD42F4D)
+                            : const Color(0xFF5D5F61),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Bank Transfer Option
-              GestureDetector(
-                onTap: () => _selectPaymentMethod('Bank Transfer'),
-                child: Row(
-                  children: [
-                    // Bank Transfer Logo Placeholder
-                    Container(
-                      width: 42,
-                      height: 26,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Text(
-                          'Bank',
-                          style: TextStyle(fontSize: 10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Bank Transfer',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      selectedPaymentMethod == 'Bank Transfer'
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: selectedPaymentMethod == 'Bank Transfer'
-                          ? const Color(0xFFD42F4D)
-                          : const Color(0xFF5D5F61),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Xendit Option
-              GestureDetector(
-                onTap: () => _selectPaymentMethod('Xendit'),
-                child: Row(
-                  children: [
-                    // Xendit Logo Placeholder
-                    Container(
-                      width: 42,
-                      height: 26,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Text(
-                          'Xendit',
-                          style: TextStyle(fontSize: 8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Xendit',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      selectedPaymentMethod == 'Xendit'
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: selectedPaymentMethod == 'Xendit'
-                          ? const Color(0xFFD42F4D)
-                          : const Color(0xFF5D5F61),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -627,77 +1066,84 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
     final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
     final totalPrice = widget.site.price * numberOfDays;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Price details',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF0A0A0A),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Price details',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0A0A0A),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-        // Price Breakdown
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'} x ₱${widget.site.price.toStringAsFixed(0)}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF717375),
+          // Price Breakdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$numberOfDays ${numberOfDays == 1 ? 'day' : 'days'} x ₱${widget.site.price >= 1000 ? NumberFormat('#,###').format(widget.site.price) : widget.site.price.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF717375),
+                ),
               ),
-            ),
-            Text(
-              '₱${totalPrice.toStringAsFixed(0)}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF717375),
+              Text(
+                '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF717375),
+                ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Total
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total PHP',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0A),
-                decoration: TextDecoration.underline,
-              ),
-            ),
-            Text(
-              '₱${totalPrice.toStringAsFixed(0)}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        const Text(
-          'Price breakdown',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF0A0A0A),
-            decoration: TextDecoration.underline,
+            ],
           ),
-        ),
-      ],
+
+          const SizedBox(height: 16),
+  
+          const Divider(color: Color(0xFFD8DCE0)),
+  
+          const SizedBox(height: 16),
+  
+          // Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total PHP',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              Text(
+                '₱${totalPrice >= 1000 ? NumberFormat('#,###').format(totalPrice) : totalPrice.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0A0A0A),
+                ),
+              ),
+            ],
+          ),
+  
+          const SizedBox(height: 8),
+  
+          const Text(
+            'Price breakdown',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF0A0A0A),
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -770,6 +1216,12 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
       setState(() {
         errorMessage = null;
         isUploading = true;
+        // Dispose previous controllers
+        _chewieController?.dispose();
+        _videoController?.dispose();
+        _videoController = null;
+        _chewieController = null;
+        _isVideoInitialized = false;
         uploadProgress = 0.0;
       });
 
@@ -788,6 +1240,32 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         videoUrl = downloadUrl;
         isUploading = false;
         uploadProgress = 1.0;
+      });
+
+      // Initialize video controller
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl!));
+      await _videoController!.initialize();
+
+      // Initialize Chewie controller
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController!,
+        aspectRatio: 5 / 6, // 5:6 aspect ratio for portrait video
+        autoPlay: true,
+        looping: false,
+        allowFullScreen: true,
+        allowMuting: true,
+        errorBuilder: (context, errorMessage) {
+          return Center(
+            child: Text(
+              errorMessage,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      );
+
+      setState(() {
+        _isVideoInitialized = true;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -819,60 +1297,45 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
       return;
     }
 
-    if (selectedPaymentMethod != 'Xendit') {
-      // For other methods, just create booking
-      try {
-        await _createBooking('pending');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking created successfully!')),
-        );
-        Navigator.of(context).pop(); // Go back to previous screen
-      } catch (e) {
-        print('Booking error: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking failed: $e')),
-        );
-      }
-    } else {
-      try {
-        setState(() {
-          isProcessingPayment = true;
-          errorMessage = null;
-        });
-
-        final userEmail = context.read<AuthProvider>().currentUser?.email;
-        final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
-        final invoice = await _paymentService.createInvoice(
-          amount: (widget.site.price * numberOfDays).toInt() < 100 ? 100 : (widget.site.price * numberOfDays).toInt(),
-          description: '${widget.site.name} - ${widget.startDate.toString().split(' ')[0]} to ${widget.endDate.toString().split(' ')[0]}',
-          payerEmail: (userEmail != null && userEmail.contains('@')) ? userEmail : 'test@example.com',
-        );
-
-        final paymentUrl = invoice['invoice_url'];
-        await _paymentService.openPaymentUrl(paymentUrl);
-
-        // For development, assume payment successful after opening URL
-        await _createBooking('paid', paymentUrl: paymentUrl);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment successful!')),
-        );
-
-        Navigator.of(context).pop(); // Go back to previous screen
-      } catch (e) {
-        setState(() {
-          errorMessage = e.toString();
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment failed: $e')),
-        );
-      } finally {
-        setState(() {
-          isProcessingPayment = false;
-        });
-      }
+    // For all payment methods, create pending booking
+    try {
+      await _createBooking('pending');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking created successfully!')),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => LoadingScreen(nextScreen: const ProcessedScreen())),
+      );
+    } catch (e) {
+      print('Booking error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking failed: $e')),
+      );
     }
+  }
+  void _showChangeContentDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Change Content'),
+          content: const Text('Are you sure you want to replace your current content?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _pickAndUploadVideo();
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _createBooking(String status, {String? paymentUrl}) async {
@@ -895,7 +1358,20 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
       final rawProduct = widget.site.rawData;
       final companyId = rawProduct?['company_id'] ?? 'Pc3HFxYSrwTvTZ8wU84m'; // Default from example
       final productId = rawProduct?['id'] ?? widget.site.id;
-      final sellerId = rawProduct?['seller_id'] ?? 'C5Rz6ROQTAegDNMtMXGHzD8CCHU2'; // Default from example
+      final sellerId = widget.site.sellerId ?? rawProduct?['seller_id'] ?? rawProduct?['company_id'] ?? 'C5Rz6ROQTAegDNMtMXGHzD8CCHU2'; // Use site.sellerId, then rawData, then company_id as fallback
+
+      // Calculate amounts
+      final numberOfDays = widget.endDate.difference(widget.startDate).inDays + 1;
+      final totalPrice = widget.site.price * numberOfDays;
+      const taxRate = 0.12;
+      final taxAmount = totalPrice * taxRate;
+      final netAmount = totalPrice - taxAmount;
+      final amounts = {
+        'totalAmount': totalPrice,
+        'taxRate': taxRate,
+        'taxAmount': taxAmount,
+        'netAmount': netAmount,
+      };
 
       final bookingData = {
         'company_id': companyId,
@@ -910,6 +1386,7 @@ class _CheckoutPayScreenState extends State<CheckoutPayScreen> {
         'url': videoUrl,
         'client': clientMap,
         'reservation_id': 'RV-${now.millisecondsSinceEpoch}',
+        'amounts': amounts,
       };
 
       final docRef = await FirebaseFirestore.instance.collection('booking').add(bookingData);

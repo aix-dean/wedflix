@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../providers/app_provider.dart';
 import '../services/places_service.dart';
 import '../services/led_sites_service.dart';
 import '../models/site.dart';
 import '../widgets/site_card.dart';
+import '../widgets/bottom_nav_component.dart';
 import 'site_details_screen.dart';
+import 'home_screen.dart';
+import 'wishlist_screen.dart';
+import 'trips_screen.dart';
+import 'inbox_screen.dart';
+import 'profile_screen.dart';
+import 'search_screen.dart';
 
 class MapResultsScreen extends StatefulWidget {
   const MapResultsScreen({super.key});
@@ -26,6 +34,8 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
   List<LatLng> _routePoints = []; // Store route points for LED sites
   List<Site> _ledSites = []; // Store LED sites for the sheet
   List<Place> _places = []; // Store places for LED sites
+  int currentIndex = 0; // Assuming this screen is part of Explore tab
+  bool hasInboxNotifications = false; // TODO: Connect to provider for notifications
 
   @override
   void initState() {
@@ -303,7 +313,7 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '₱${site['price'].toStringAsFixed(2)}',
+              Site.fromLedSiteData(site).formattedPrice,
               style: const TextStyle(fontSize: 18, color: Colors.green, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
@@ -315,56 +325,151 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Close'),
             ),
-          ],
-        ),
+              ],
+            ),
       ),
     );
   }
 
   String _getPriceForPlace(Place place) {
+    double price;
     switch (place.type) {
       case 'church':
-        return '\$500';
+        price = 500;
+        break;
       case 'reception':
-        return '\$1000';
+        price = 1000;
+        break;
       default:
         return 'Price not available';
     }
+    String numberStr = price >= 1000 ? NumberFormat('#,###').format(price) : price.toStringAsFixed(0);
+    return '\$$numberStr / Day';
+  }
+
+  void _onTabSelected(int index) {
+    if (index == currentIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        screen = const WishlistScreen();
+        break;
+      case 2:
+        screen = const TripsScreen();
+        break;
+      case 3:
+        screen = const InboxScreen();
+        break;
+      case 4:
+        screen = const ProfileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Selected Venues'),
-      ),
-      body: Stack(
+      body: Column(
         children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _initialCameraPosition ?? const LatLng(14.5995, 120.9842),
-              zoom: 12,
-            ),
-            markers: markers,
-            polylines: polylines,
-            onMapCreated: (controller) {
-              // Prevent setting controller if disposed
-              if (!_isDisposed && mounted) {
-                mapController = controller;
-              }
-            },
-          ),
-          if (isLoadingRoutes || isLoadingLedSites)
-            Container(
-              color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(),
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 42, 16, 16),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SearchScreen()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFD8DCE0)),
+                  borderRadius: BorderRadius.circular(43),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.black),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Perfect fit for you',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Wedding Date ∙ Preferred Locations',
+                            style: TextStyle(
+                              color: Color(0xFF717375),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFD8DCE0)),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Icon(
+                        Icons.filter_list,
+                        color: Colors.black,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _initialCameraPosition ?? const LatLng(14.5995, 120.9842),
+                    zoom: 12,
+                  ),
+                  markers: markers,
+                  polylines: polylines,
+                  onMapCreated: (controller) {
+                    // Prevent setting controller if disposed
+                    if (!_isDisposed && mounted) {
+                      mapController = controller;
+                    }
+                  },
+                ),
+                if (isLoadingRoutes || isLoadingLedSites)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
 
-          // DraggableScrollableSheet for LED sites (always visible after loading)
-          if (!isLoadingLedSites)
-            DraggableScrollableSheet(
+                // DraggableScrollableSheet for LED sites (always visible after loading)
+                if (!isLoadingLedSites)
+                  DraggableScrollableSheet(
               initialChildSize: 0.25, // 25% of screen height
               minChildSize: 0.25, // Minimum 25%
               maxChildSize: 0.8, // Maximum 80%
@@ -486,8 +591,16 @@ class _MapResultsScreenState extends State<MapResultsScreen> {
                 );
               },
             ),
+              ],
+            ),
+          ),
         ],
       ),
+    bottomNavigationBar: BottomNavComponent(
+        currentIndex: currentIndex,
+        onTabSelected: _onTabSelected,
+        hasInboxNotifications: hasInboxNotifications,
+      ),
     );
+    }
   }
-}

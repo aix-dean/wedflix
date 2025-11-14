@@ -4,8 +4,13 @@ import '../providers/app_provider.dart';
 import '../providers/auth_provider.dart' as my_auth;
 import '../widgets/venue_card.dart';
 import '../widgets/category_filter.dart';
+import '../widgets/bottom_nav_component.dart';
 import 'search_screen.dart';
 import 'login_screen.dart';
+import 'wishlist_screen.dart';
+import 'trips_screen.dart';
+import 'inbox_screen.dart';
+import 'profile_screen.dart';
 import '../models/venue.dart';
 import '../services/location_service.dart';
 import '../services/places_service.dart';
@@ -28,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final LocationService _locationService = LocationService();
   final PlacesService _placesService = PlacesService();
+  int currentIndex = 0; // Home is selected
+  bool hasInboxNotifications = false; // TODO: Connect to provider for notifications
 
   @override
   void initState() {
@@ -81,6 +88,35 @@ class _HomeScreenState extends State<HomeScreen> {
           isVideo: false,
         )
       ] : null,
+    );
+  }
+  void _onTabSelected(int index) {
+    if (index == currentIndex) return;
+
+    Widget screen;
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        screen = const WishlistScreen();
+        break;
+      case 2:
+        screen = const TripsScreen();
+        break;
+      case 3:
+        screen = const InboxScreen();
+        break;
+      case 4:
+        screen = const ProfileScreen();
+        break;
+      default:
+        return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
     );
   }
 
@@ -251,6 +287,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
           ),
         ],
+      ),
+      bottomNavigationBar: BottomNavComponent(
+        currentIndex: currentIndex,
+        onTabSelected: _onTabSelected,
+        hasInboxNotifications: hasInboxNotifications,
       ),
     );
   }

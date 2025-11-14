@@ -79,40 +79,77 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
   }
 
   Future<void> _showDatePicker() async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(
-        start: widget.startDate,
-        end: widget.endDate,
-      ),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: const Color(0xFFD42F4D),
-            colorScheme: const ColorScheme.light(primary: Color(0xFFD42F4D)),
-            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (!mounted) return;
-
-    if (picked != null) {
-      // Navigate to checkout with selected date range
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CheckoutPayScreen(
-            site: widget.site,
-            startDate: picked.start,
-            endDate: picked.end,
-          ),
-        ),
+    if (widget.startDate == widget.endDate) {
+      // Single day selection
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+        initialDate: widget.startDate,
+        builder: (BuildContext context, Widget? child) {
+          return Theme(
+            data: ThemeData.light().copyWith(
+              primaryColor: const Color(0xFFD42F4D),
+              colorScheme: const ColorScheme.light(primary: Color(0xFFD42F4D)),
+              buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+            ),
+            child: child!,
+          );
+        },
       );
+
+      if (!mounted) return;
+
+      if (picked != null) {
+        // Navigate to checkout with selected single date
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CheckoutPayScreen(
+              site: widget.site,
+              startDate: picked,
+              endDate: picked,
+            ),
+          ),
+        );
+      }
+    } else {
+      // Range selection
+      final DateTimeRange? picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
+        initialDateRange: DateTimeRange(
+          start: widget.startDate,
+          end: widget.endDate,
+        ),
+        builder: (BuildContext context, Widget? child) {
+          return Theme(
+            data: ThemeData.light().copyWith(
+              primaryColor: const Color(0xFFD42F4D),
+              colorScheme: const ColorScheme.light(primary: Color(0xFFD42F4D)),
+              buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (!mounted) return;
+
+      if (picked != null) {
+        // Navigate to checkout with selected date range
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CheckoutPayScreen(
+              site: widget.site,
+              startDate: picked.start,
+              endDate: picked.end,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -795,7 +832,7 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '₱${widget.site.price.toStringAsFixed(0)} day',
+                    widget.site.formattedPrice,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
@@ -803,7 +840,9 @@ class _SiteDetailsScreenState extends State<SiteDetailsScreen> {
                     ),
                   ),
                   Text(
-                    '${DateFormat('MMM d').format(widget.startDate)} - ${DateFormat('MMM d, y').format(widget.endDate)}',
+                    widget.startDate == widget.endDate
+                        ? DateFormat('MMM d, y').format(widget.startDate)
+                        : '${DateFormat('MMM d').format(widget.startDate)} - ${DateFormat('MMM d, y').format(widget.endDate)}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF0A0A0A),

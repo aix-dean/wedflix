@@ -16,6 +16,7 @@ class Booking {
   final String? reservationId;
   final Venue items;
   final Map<String, dynamic>? projectCompliance;
+  final Map<String, dynamic>? amounts;
 
   Booking({
     required this.id,
@@ -33,6 +34,7 @@ class Booking {
     this.reservationId,
     required this.items,
     this.projectCompliance,
+    this.amounts,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,7 @@ class Booking {
       reservationId: json['reservation_id'] ?? 'RV-${DateTime.now().millisecondsSinceEpoch}',
       items: Venue.fromJson(json['items'] ?? {}),
       projectCompliance: json['projectCompliance'],
+      amounts: json['amounts'],
     );
   }
 
@@ -72,6 +75,9 @@ class Booking {
       'reservation_id': reservationId,
       'items': items.toJson(),
       'projectCompliance': projectCompliance,
+      'amounts': amounts,
     };
   }
+
+  double get totalAmount => amounts?['totalAmount']?.toDouble() ?? 0.0;
 }

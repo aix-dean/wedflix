@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 
 class Review {
   final String reviewerName;
@@ -42,6 +43,7 @@ class Site {
   final List<Review> reviews;
   final List<Feature> features;
   final double distanceMeters;
+  final String? sellerId;
   final Map<String, dynamic>? rawData;
 
   Site({
@@ -59,6 +61,7 @@ class Site {
     this.reviewCount = 0,
     this.reviews = const [],
     this.features = const [],
+    this.sellerId,
     this.rawData,
   });
 
@@ -102,6 +105,7 @@ class Site {
           icon: Icons.cancel,
         ),
       ], // Default features
+      sellerId: rawProduct?['seller_id'],
       rawData: rawProduct,
     );
   }
@@ -132,7 +136,8 @@ class Site {
   }
 
   String get formattedPrice {
-    return '₱${price.toStringAsFixed(2)}';
+    String numberStr = price >= 1000 ? NumberFormat('#,###.##').format(price) : price.toStringAsFixed(2);
+    return '₱$numberStr / Day';
   }
 
   String get displaySnippet {

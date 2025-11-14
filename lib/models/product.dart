@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 
 class Product {
   final String id;
@@ -11,6 +12,7 @@ class Product {
   final String siteCode;
   final List<String> categoryNames;
   final bool active;
+  final String? sellerId;
   final Map<String, dynamic>? rawData;
 
   Product({
@@ -23,6 +25,7 @@ class Product {
     required this.siteCode,
     required this.categoryNames,
     required this.active,
+    this.sellerId,
     this.rawData,
   });
 
@@ -64,13 +67,15 @@ class Product {
       siteCode: data['site_code'] ?? specsRental?['site_code'] ?? '',
       categoryNames: List<String>.from(data['categories'] ?? []),
       active: data['active'] ?? false,
+      sellerId: data['seller_id'],
       rawData: data,
     );
   }
 
   // Format price with Philippine Peso symbol
   String get formattedPrice {
-    return '₱${price.toStringAsFixed(2)}';
+    String numberStr = price >= 1000 ? NumberFormat('#,###.##').format(price) : price.toStringAsFixed(2);
+    return '₱$numberStr / Day';
   }
 
   // Create marker info snippet

@@ -157,26 +157,12 @@ class SiteCard extends StatelessWidget {
                         ],
 
                         // Price
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: site.formattedPrice,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const TextSpan(
-                                text: ' total',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          site.formattedPrice,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
                           ),
                         ),
                       ],

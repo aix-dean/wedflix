@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:wedflix/screens/map_results_screen.dart';
 import 'dart:async';
 
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+  final Widget nextScreen;
+
+  const LoadingScreen({super.key, required this.nextScreen});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -25,7 +26,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
         Timer(const Duration(seconds: 10), () {
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MapResultsScreen()),
+              MaterialPageRoute(builder: (context) => widget.nextScreen),
             );
           }
         });
@@ -34,7 +35,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
           if (_controller.value.position >= _controller.value.duration - const Duration(milliseconds: 100)) {
             if (mounted) {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const MapResultsScreen()),
+                MaterialPageRoute(builder: (context) => widget.nextScreen),
               );
             }
           }
@@ -46,7 +47,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
         Timer(const Duration(seconds: 2), () {
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MapResultsScreen()),
+              MaterialPageRoute(builder: (context) => widget.nextScreen),
             );
           }
         });
